@@ -129,7 +129,7 @@ class X_RayDataModule(pl.LightningDataModule):
         
 
     def setup(self, stage=None):
-        if self.args["data_aug"]:
+        if self.args["data_aug"] == "yes":
             train_transforms = transforms.Compose([
                 transforms.Resize((image_size, image_size)),
                 transforms.RandomHorizontalFlip(),
@@ -205,10 +205,14 @@ class LightningX_RayClassifier(pl.LightningModule):
         super(LightningX_RayClassifier, self).__init__()
         self.args = kwargs
         self.pre_trained = self.args["pre_trained"]
-        if self.args["arch"] == "vit":
-            self.model = create_vit_model(self.pre_trained)
+        if self.pre_trained == "yes":
+            pre_train = True
         else:
-            self.model = create_cnn_model(self.pre_trained)
+            pre_train = False
+        if self.args["arch"] == "vit":
+            self.model = create_vit_model(pre_train)
+        else:
+            self.model = create_cnn_model(pre_train)
         
 
         self.criterion = nn.CrossEntropyLoss()
@@ -310,11 +314,11 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--pre_trained", type=bool, default=True, help="Should the model be pre-trained with ImageNet weights"
+        "--pre_trained", type=str, default="yes", help="Should the model be pre-trained with ImageNet weights (default: yes)"
     )
 
     parser.add_argument(
-        "--data_aug", type=bool, default=True, help="Should should data augmentation be used during training (default: True)"
+        "--data_aug", type=str, default="yes", help="Should should data augmentation be used during training (default: yes)"
     )
 
     parser.add_argument(
@@ -369,12 +373,12 @@ if __name__ == "__main__":
         patience=dict_args["es_patience"],
     )
 
-    if dict_args["pre_trained"]:
+    if dict_args["pre_trained"] == "yes":
         transfer = "pre-trained"
     else:
         transfer = "not-pre-trained"
 
-    if dict_args["data_aug"]:
+    if dict_args["data_aug"] == "yes":
         aug = "data-augmentation"
     else:
         aug = "no-data-augmentation"
