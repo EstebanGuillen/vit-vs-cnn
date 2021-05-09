@@ -172,7 +172,7 @@ class LightningX_RayClassifier(pl.LightningModule):
         
         super(LightningX_RayClassifier, self).__init__()
         self.args = kwargs
-        self.pre_trained = sefl.args["pre_trained"]
+        self.pre_trained = self.args["pre_trained"]
         if self.args["arch"] == "vit":
             self.model = create_vit_model(self.pre_trained)
         else:
