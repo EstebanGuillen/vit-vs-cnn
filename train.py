@@ -377,12 +377,11 @@ if __name__ == "__main__":
     else:
         aug = "no-data-augmentation"
 
-    run_name = str(dict_args["arch"]) + "_" + 
-               str(dict_args["optim"]) + "_" + 
-               str(dict_args["lr"]) + "_" + 
-               str(dict_args["batch_size"]) + "_" + 
-               transfer + "_" + 
-               aug
+    run_name = str(dict_args["arch"]) + "_" + \
+               str(dict_args["optim"]) + "_" + \
+               str(dict_args["lr"]) + "_" + \
+               str(dict_args["batch_size"]) + "_" + \
+               transfer + "_" + aug
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=os.getcwd(), 
