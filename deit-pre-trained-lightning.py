@@ -271,7 +271,7 @@ class LightningX_RayClassifier(pl.LightningModule):
                                                              max_lr=self.args["lr"], 
                                                              steps_per_epoch=steps_per_epoch,
                                                              pct_start=0.4,
-                                                             epochs==self.args["max_epochs"])
+                                                             epochs=self.args["max_epochs"])
         self.scheduler = {"scheduler": self.scheduler, "interval" : "step" }
         
         
