@@ -346,6 +346,7 @@ if __name__ == "__main__":
         gpus=1,
         auto_select_gpus=True,
         max_epochs=dict_args["max_epochs"],
+        logger=pl.loggers.TensorBoardLogger('lightning_logs/', name=run_name),
         precision=16
     )
 
