@@ -41,9 +41,9 @@ from pytorch_pretrained_vit import ViT
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 import math
 # Training settings
-batch_size = 16
-epochs = 50
-lr = 1e-5
+#batch_size = 16
+#epochs = 50
+#lr = 1e-5
 image_size = 384
 root_dir = '/nfs/research/ejguill/data/x_ray_data/all_images/'
 
@@ -155,14 +155,14 @@ class X_RayDataModule(pl.LightningDataModule):
         return self.create_data_loader(self.df_test,shuffle=False)
 
 
-def create_vit_model():
-    model = torch.hub.load('facebookresearch/deit:main', 'deit_base_patch16_384', pretrained=True)
+def create_vit_model(pre_trained=True):
+    model = torch.hub.load('facebookresearch/deit:main', 'deit_base_patch16_384', pretrained=pre_trained)
     num_ftrs = model.head.in_features
     model.head = nn.Linear(num_ftrs, 2)
     return model
 
-def create_cnn_model():
-    model = models.resnet152(pretrained=True)
+def create_cnn_model(pre_trained=True):
+    model = models.resnet152(pretrained=pre_trained)
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, 2)
     return model
@@ -172,16 +172,16 @@ class LightningX_RayClassifier(pl.LightningModule):
         
         super(LightningX_RayClassifier, self).__init__()
         self.args = kwargs
-
+        self.pre_trained = sefl.args["pre_trained"]
         if self.args["arch"] == "vit":
-            self.model = create_vit_model()
+            self.model = create_vit_model(self.pre_trained)
         else:
-            self.model = create_cnn_model()
+            self.model = create_cnn_model(self.pre_trained)
         
 
         self.criterion = nn.CrossEntropyLoss()
        
-
+    '''
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
@@ -202,7 +202,7 @@ class LightningX_RayClassifier(pl.LightningModule):
         parser.add_argument(
             "--lr", type=float, default=lr, metavar="LR", help="learning rate (default: 0.00003)",
         )
-        return parser
+        return parser '''
 
     def forward(self, x):
        
@@ -256,27 +256,22 @@ class LightningX_RayClassifier(pl.LightningModule):
         avg_test_acc = torch.stack([x["test_acc"] for x in outputs]).mean()
         self.log("avg_test_acc", avg_test_acc)
 
-    def prepare_data(self):
-        
-        return {}
+    #def prepare_data(self):
+        #return {}
 
     def configure_optimizers(self):
         
-        #self.optimizer = torch.optim.Adam(self.parameters(), lr=self.args["lr"])
-        #self.scheduler = {
-            #"scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(
-               # self.optimizer, mode="min", factor=0.1, patience=2, min_lr=1e-9, verbose=True,
-            #),
-            #"monitor": "val_loss",
-        #}
+        if self.args["optim"] == "sgd":
+            self.optimizer = torch.optim.SGD(self.parameters(), lr=self.args["lr"], momentum=0.9)
+        else:
+            self.optimizer = torch.optim.Adam(self.parameters(), lr=self.args["lr"])
         
-        #self.optimizer = torch.optim.SGD(self.parameters(), lr=self.args["lr"], momentum=0.9)
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=self.args["lr"])
+        steps_per_epoch = math.ceil(len(train_data)/self.args["batch_size"])
         self.scheduler = torch.optim.lr_scheduler.OneCycleLR(self.optimizer, 
                                                              max_lr=self.args["lr"], 
                                                              steps_per_epoch=steps_per_epoch,
                                                              pct_start=0.4,
-                                                             epochs=epochs)
+                                                             epochs==self.args["max_epochs"])
         self.scheduler = {"scheduler": self.scheduler, "interval" : "step" }
         
         
@@ -284,7 +279,7 @@ class LightningX_RayClassifier(pl.LightningModule):
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description="PyTorch Autolog X-ray Example")
+    parser = ArgumentParser(description="PyTorch X-ray Example")
 
     # Early stopping parameters
     parser.add_argument(
@@ -305,8 +300,30 @@ if __name__ == "__main__":
         "--arch", type=str, default="cnn", help="Architecture to train (cnn or vit)"
     )
 
-    parser = pl.Trainer.add_argparse_args(parent_parser=parser)
-    parser = LightningX_RayClassifier.add_model_specific_args(parent_parser=parser)
+    parser.add_argument(
+        "--pre_trained", type=bool, default=True, help="Should the model be pre-trained with ImageNet weights"
+    )
+
+    parser.add_argument(
+        "--optim", type=str, default="adam", help="Which optimizer should be used (adam or sgd)"
+    )
+
+    parser.add_argument(
+            "--batch_size", type=int, default=16, metavar="BS", help="input batch size for training (default: 16)",
+    )
+    parser.add_argument(
+            "--num_workers", type=int, default=3, metavar="N", help="number of workers (default: 3)",
+    )
+    parser.add_argument(
+            "--lr", type=float, default=1e-6, metavar="LR", help="learning rate (default: 1e-6)",
+     )
+    
+    parser.add_argument(
+            "--max_epochs", type=int, default=50, metavar="EPOCHS", help="Maximum number of epochs (default: 50)",
+        )
+
+    #parser = pl.Trainer.add_argparse_args(parent_parser=parser)
+    #parser = LightningX_RayClassifier.add_model_specific_args(parent_parser=parser)
 
     mlflow.pytorch.autolog()
 
@@ -330,13 +347,20 @@ if __name__ == "__main__":
         patience=dict_args["es_patience"],
     )
 
+    if dict_args["pre_trained"]:
+        transfer = "pre-trained"
+    else:
+        transfer = "not-pre-trained"
+
+    run_name = str(dict_args["arch"]) + "_" + str(dict_args["optim"]) + "_" + str(dict_args["lr"]) + "_" + str(dict_args["batch_size"]) + "_" + transfer
+
     checkpoint_callback = ModelCheckpoint(
         dirpath=os.getcwd(), 
         save_top_k=1, 
         verbose=True, 
         monitor="val_loss", 
         mode="min", 
-        prefix="",
+        prefix=run_name,
     )
     lr_logger = LearningRateMonitor()
 
@@ -346,10 +370,10 @@ if __name__ == "__main__":
         checkpoint_callback=checkpoint_callback,
         gpus=1,
         auto_select_gpus=True,
-        max_epochs=epochs,
+        max_epochs=dict_args["batch_size"],
         precision=16
     )
-    with mlflow.start_run(run_name="architecture-image-size"):
+    with mlflow.start_run(run_name=run_name):
         trainer.fit(model, dm)
         trainer.test()
     
