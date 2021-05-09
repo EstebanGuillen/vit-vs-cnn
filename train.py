@@ -165,7 +165,7 @@ class X_RayDataModule(pl.LightningDataModule):
         self.df_val = valid_data
         self.df_test = test_data
     
-    def train_set_size():
+    def train_set_size(self):
         return len(self.df_train)
 
     def create_data_loader(self, df, shuffle=True):
@@ -351,7 +351,9 @@ if __name__ == "__main__":
     dm.prepare_data()
     dm.setup(stage="fit")
 
-    steps_per_epoch = math.ceil(dm.train_set_size/dict_args["batch_size"])
+    train_set_size = dm.train_set_size()
+    batch_size = dict_args["batch_size"]
+    steps_per_epoch = math.ceil( train_set_size/batch_size)
     dict_args["steps_per_epoch"] = steps_per_epoch
 
     model = LightningX_RayClassifier(**dict_args)
