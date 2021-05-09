@@ -113,7 +113,7 @@ test_data = X_RayDataset(test_list, root_dir=root_dir, transform=test_transforms
 
 
 #steps_per_epoch = math.ceil(len(train_data)/batch_size)
-print('steps_per_epoch',steps_per_epoch)
+#print('steps_per_epoch',steps_per_epoch)
 
 
 
