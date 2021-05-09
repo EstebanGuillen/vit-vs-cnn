@@ -330,7 +330,7 @@ if __name__ == "__main__":
     run_name = str(dict_args["arch"]) + "_" + str(dict_args["optim"]) + "_" + str(dict_args["lr"]) + "_" + str(dict_args["batch_size"]) + "_" + transfer
 
     checkpoint_callback = ModelCheckpoint(
-        dirpath=run_dir, 
+        dirpath=os.getcwd(), 
         save_top_k=1, 
         verbose=True, 
         monitor="val_loss", 
@@ -341,7 +341,6 @@ if __name__ == "__main__":
 
     trainer = pl.Trainer.from_argparse_args(
         args,
-        default_root_dir=run_dir,
         callbacks=[lr_logger, early_stopping], 
         checkpoint_callback=checkpoint_callback,
         gpus=1,
@@ -350,7 +349,7 @@ if __name__ == "__main__":
         precision=16
     )
 
-    mlflow.set_tracking_uri("file:" + run_dir)
+    #mlflow.set_tracking_uri("file:" + run_dir)
 
     with mlflow.start_run(run_name=run_name):
         trainer.fit(model, dm)
