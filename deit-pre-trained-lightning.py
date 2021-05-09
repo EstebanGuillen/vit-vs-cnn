@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import pytorch_lightning as pl
+import mlflow
 import mlflow.pytorch
 import os
 import torch
@@ -48,6 +49,8 @@ root_dir = '/nfs/research/ejguill/data/x_ray_data/all_images/'
 train_list = '/nfs/research/ejguill/data/x_ray_data/train.csv'
 valid_list = '/nfs/research/ejguill/data/x_ray_data/val.csv'
 test_list = '/nfs/research/ejguill/data/x_ray_data/test.csv'
+
+run_dir = '/nfs/research/ejguill/data/x_ray_data/runs/'
 
 train_transforms = transforms.Compose(
     [
@@ -327,7 +330,7 @@ if __name__ == "__main__":
     run_name = str(dict_args["arch"]) + "_" + str(dict_args["optim"]) + "_" + str(dict_args["lr"]) + "_" + str(dict_args["batch_size"]) + "_" + transfer
 
     checkpoint_callback = ModelCheckpoint(
-        dirpath=os.getcwd(), 
+        dirpath=run_dir, 
         save_top_k=1, 
         verbose=True, 
         monitor="val_loss", 
@@ -337,7 +340,8 @@ if __name__ == "__main__":
     lr_logger = LearningRateMonitor()
 
     trainer = pl.Trainer.from_argparse_args(
-        args, 
+        args,
+        default_root_dir=run_dir,
         callbacks=[lr_logger, early_stopping], 
         checkpoint_callback=checkpoint_callback,
         gpus=1,
@@ -345,6 +349,9 @@ if __name__ == "__main__":
         max_epochs=dict_args["max_epochs"],
         precision=16
     )
+
+    mlflow.set_tracking_uri("file:" + run_dir)
+
     with mlflow.start_run(run_name=run_name):
         trainer.fit(model, dm)
         trainer.test()
