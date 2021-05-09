@@ -52,38 +52,6 @@ test_list = '/nfs/research/ejguill/data/x_ray_data/test.csv'
 
 run_dir = '/nfs/research/ejguill/data/x_ray_data/runs/'
 
-'''
-train_transforms = transforms.Compose(
-    [
-        transforms.Resize((image_size, image_size)),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(),
-        transforms.RandomRotation(degrees=90),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])
-    ]
-)
-
-val_transforms = transforms.Compose(
-    [
-        transforms.Resize((image_size, image_size)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])
-    ]
-)
-
-
-test_transforms = transforms.Compose(
-    [
-        transforms.Resize((image_size, image_size)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])
-    ]
-)'''
-
 
 class X_RayDataset(Dataset):
     
@@ -107,11 +75,6 @@ class X_RayDataset(Dataset):
         img_transformed = self.transform(img)
         
         return img_transformed, label
-
-#train_data = X_RayDataset(train_list, root_dir=root_dir, transform=train_transforms)
-#valid_data = X_RayDataset(valid_list, root_dir=root_dir, transform=test_transforms)
-#test_data = X_RayDataset(test_list, root_dir=root_dir, transform=test_transforms)
-
 
 
 
@@ -269,9 +232,6 @@ class LightningX_RayClassifier(pl.LightningModule):
         avg_test_acc = torch.stack([x["test_acc"] for x in outputs]).mean()
         self.log("avg_test_acc", avg_test_acc)
 
-    #def prepare_data(self):
-        #return {}
-
     def configure_optimizers(self):
         
         if self.args["optim"] == "sgd":
@@ -279,7 +239,6 @@ class LightningX_RayClassifier(pl.LightningModule):
         else:
             self.optimizer = torch.optim.Adam(self.parameters(), lr=self.args["lr"])
         
-        #steps_per_epoch = math.ceil(len(train_data)/self.args["batch_size"])
         self.scheduler = torch.optim.lr_scheduler.OneCycleLR(self.optimizer, 
                                                              max_lr=self.args["lr"], 
                                                              steps_per_epoch=self.args["steps_per_epoch"],
@@ -339,8 +298,6 @@ if __name__ == "__main__":
             "--max_epochs", type=int, default=50, metavar="EPOCHS", help="Maximum number of epochs (default: 50)",
         )
 
-    #parser = pl.Trainer.add_argparse_args(parent_parser=parser)
-    #parser = LightningX_RayClassifier.add_model_specific_args(parent_parser=parser)
 
     mlflow.pytorch.autolog()
 
@@ -362,9 +319,6 @@ if __name__ == "__main__":
 
     model = LightningX_RayClassifier(**dict_args)
 
-    #dm = X_RayDataModule(**dict_args)
-    #dm.prepare_data()
-    #dm.setup(stage="fit")
 
     early_stopping = EarlyStopping(
         monitor=dict_args["es_monitor"],
@@ -405,8 +359,6 @@ if __name__ == "__main__":
         logger=pl.loggers.TensorBoardLogger('lightning_logs/', name=run_name),
         precision=16
     )
-
-    #mlflow.set_tracking_uri("file:" + run_dir)
 
     with mlflow.start_run(run_name=run_name):
         trainer.fit(model, dm)
