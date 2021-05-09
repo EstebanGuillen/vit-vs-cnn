@@ -11,39 +11,37 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.metrics.functional import accuracy
 from torch.nn import functional as F
-from torch.utils.data import DataLoader, random_split
-from torchvision import datasets, transforms, models
+#from torch.utils.data import DataLoader, random_split
+
+#from torchvision import datasets, transforms, models
 
 
 import glob
 from itertools import chain
-import os
+#import os
 import random
 import zipfile
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import torch
+#import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from linformer import Linformer
+#from linformer import Linformer
 from PIL import Image
-from sklearn.model_selection import train_test_split
+#from sklearn.model_selection import train_test_split
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader, Dataset
-from torchvision import datasets, transforms
+from torchvision import datasets, transforms,models
 from tqdm.notebook import tqdm
 from skimage import io
 
-from pytorch_pretrained_vit import ViT
+#from pytorch_pretrained_vit import ViT
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 import math
-# Training settings
-#batch_size = 16
-#epochs = 50
-#lr = 1e-5
+
 image_size = 384
 root_dir = '/nfs/research/ejguill/data/x_ray_data/all_images/'
 
@@ -112,9 +110,6 @@ valid_data = X_RayDataset(valid_list, root_dir=root_dir, transform=test_transfor
 test_data = X_RayDataset(test_list, root_dir=root_dir, transform=test_transforms)
 
 
-#steps_per_epoch = math.ceil(len(train_data)/batch_size)
-#print('steps_per_epoch',steps_per_epoch)
-
 
 
 class X_RayDataModule(pl.LightningDataModule):
@@ -180,29 +175,6 @@ class LightningX_RayClassifier(pl.LightningModule):
         
 
         self.criterion = nn.CrossEntropyLoss()
-       
-    '''
-    @staticmethod
-    def add_model_specific_args(parent_parser):
-        parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument(
-            "--batch_size",
-            type=int,
-            default=batch_size,
-            metavar="N",
-            help="input batch size for training (default: 16)",
-        )
-        parser.add_argument(
-            "--num_workers",
-            type=int,
-            default=3,
-            metavar="N",
-            help="number of workers (default: 3)",
-        )
-        parser.add_argument(
-            "--lr", type=float, default=lr, metavar="LR", help="learning rate (default: 0.00003)",
-        )
-        return parser '''
 
     def forward(self, x):
        
@@ -370,7 +342,7 @@ if __name__ == "__main__":
         checkpoint_callback=checkpoint_callback,
         gpus=1,
         auto_select_gpus=True,
-        max_epochs=dict_args["batch_size"],
+        max_epochs=dict_args["max_epochs"],
         precision=16
     )
     with mlflow.start_run(run_name=run_name):
