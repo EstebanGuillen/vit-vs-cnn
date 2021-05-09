@@ -12,7 +12,7 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.metrics.functional import accuracy
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, random_split
-from torchvision import datasets, transforms
+from torchvision import datasets, transforms, models
 
 
 import glob
@@ -114,6 +114,9 @@ test_data = X_RayDataset(test_list, root_dir=root_dir, transform=test_transforms
 
 steps_per_epoch = math.ceil(len(train_data)/batch_size)
 print('steps_per_epoch',steps_per_epoch)
+
+
+
 class X_RayDataModule(pl.LightningDataModule):
     def __init__(self, **kwargs):
         super(X_RayDataModule, self).__init__()
@@ -152,16 +155,32 @@ class X_RayDataModule(pl.LightningDataModule):
         return self.create_data_loader(self.df_test,shuffle=False)
 
 
+def create_vit_model():
+    model = torch.hub.load('facebookresearch/deit:main', 'deit_base_patch16_384', pretrained=True)
+    num_ftrs = model.head.in_features
+    model.head = nn.Linear(num_ftrs, 2)
+    return model
+
+def create_cnn_model():
+    model = models.resnet152(pretrained=True)
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Linear(num_ftrs, 2)
+    return model
+
 class LightningX_RayClassifier(pl.LightningModule):
     def __init__(self, **kwargs):
         
         super(LightningX_RayClassifier, self).__init__()
-
-        self.model = torch.hub.load('facebookresearch/deit:main', 'deit_base_patch16_384', pretrained=True)
-        num_ftrs = self.model.head.in_features
-        self.model.head = nn.Linear(num_ftrs, 2)
-        self.criterion = nn.CrossEntropyLoss()
         self.args = kwargs
+
+        if self.args["arch"] == "vit":
+            self.model = create_vit_model()
+        else:
+            self.model = create_cnn_model()
+        
+
+        self.criterion = nn.CrossEntropyLoss()
+       
 
     @staticmethod
     def add_model_specific_args(parent_parser):
@@ -280,6 +299,10 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--es_patience", type=int, default=20, help="Early stopping patience parameter"
+    )
+
+    parser.add_argument(
+        "--arch", type=str, default="cnn", help="Architecture to train (cnn or vit)"
     )
 
     parser = pl.Trainer.add_argparse_args(parent_parser=parser)
