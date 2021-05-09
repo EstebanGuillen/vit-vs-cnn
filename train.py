@@ -300,7 +300,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
             "--gpu", type=int, default=0, metavar="GPU", help="Specify which gpu to use (default: 0)",
-        )
+    )
 
     mlflow.pytorch.autolog()
 
