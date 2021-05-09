@@ -296,8 +296,11 @@ if __name__ == "__main__":
     
     parser.add_argument(
             "--max_epochs", type=int, default=50, metavar="EPOCHS", help="Maximum number of epochs (default: 50)",
-        )
+    )
 
+    parser.add_argument(
+            "--gpu", type=int, default=0, metavar="EPOCHS", help="Specify which gpu to use (default: 0)",
+        )
 
     mlflow.pytorch.autolog()
 
@@ -349,12 +352,14 @@ if __name__ == "__main__":
     )
     lr_logger = LearningRateMonitor()
 
+    gpu = dict_args["gpu"]
+
     trainer = pl.Trainer.from_argparse_args(
         args,
         callbacks=[lr_logger, early_stopping], 
         checkpoint_callback=checkpoint_callback,
-        gpus=1,
-        auto_select_gpus=True,
+        gpus=[gpu],
+        #auto_select_gpus=True,
         max_epochs=dict_args["max_epochs"],
         logger=pl.loggers.TensorBoardLogger('lightning_logs/', name=run_name),
         precision=16
