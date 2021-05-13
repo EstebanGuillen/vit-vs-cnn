@@ -162,6 +162,12 @@ def create_cnn_model(pre_trained=True):
     model.fc = nn.Linear(num_ftrs, 2)
     return model
 
+def create_dense_model(pre_trained=True):
+    model = models.densenet201(pretrained=pre_trained)
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Linear(num_ftrs, 2)
+    return model
+
 class LightningX_RayClassifier(pl.LightningModule):
     def __init__(self, **kwargs):
         
@@ -174,6 +180,8 @@ class LightningX_RayClassifier(pl.LightningModule):
             pre_train = False
         if self.args["arch"] == "vit":
             self.model = create_vit_model(pre_train)
+        elif self.args["arch"] == "dense":
+            self.model = create_dense_model(pre_train)
         else:
             self.model = create_cnn_model(pre_train)
         
